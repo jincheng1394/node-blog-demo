@@ -1,5 +1,6 @@
 import express from "express"
 import UserModel from "../models/user"
+import PostModel from "../models/post"
 import util from "util"
 import crypto from "crypto"
 
@@ -7,9 +8,15 @@ let router = express.Router()
 
 /* GET home page. */
 router.get('/', async (req, res, next) => {
+    let posts = await PostModel.get(null)
+    if (!posts){
+        posts = []
+    }
+
     res.render('index', {
         title: '主页',
         user: req.session.user,
+        posts:posts,
         success: req.flash('success').toString(),
         error: req.flash('error').toString()
     })
@@ -103,10 +110,26 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/post', checkLogin)
 router.get('/post', async (req, res, next) => {
-    res.render('post', {title: '发表'})
+    res.render('post', {
+        title: '发表',
+        user: req.session.user,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
 })
+
 router.post('/post', checkLogin)
 router.post('/post', async (req, res, next) => {
+    try {
+        let currentUser = req.session.user
+        let post = new PostModel(currentUser.name, req.body.title, req.body.post)
+        post.save()
+        req.flash('success', "发布成功")
+        res.redirect('/')
+    } catch (e) {
+        req.flash('error', e)
+        res.redirect('/post')
+    }
 })
 
 router.get('/logout', checkLogin)
