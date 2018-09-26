@@ -1,5 +1,5 @@
 import mongodb from "./db"
-import crypto from "crypto";
+import {markdown} from "markdown"
 
 let collectionName = "posts"
 
@@ -63,6 +63,9 @@ Post.get = (name) => {
             collection.find(query).sort({
                 time: -1
             }).toArray().then((res) => {
+                res.forEach(doc => {
+                    doc.post = markdown.toHTML(doc.post)
+                })
                 resolve(res)
             }).catch((err) => {
                 reject(err)
