@@ -1,0 +1,16 @@
+=== nodejs ====
+.DS_Store
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+yarn.lock
+
+=== idea ====
+*.iml
+*.ipr
+*.iws
+.idea/
+
+=== other ===
+config/*_test.*
