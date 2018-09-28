@@ -132,7 +132,8 @@ router.post('/post', checkLogin)
 router.post('/post', async (req, res) => {
     try {
         let currentUser = req.session.user
-        let post = new PostModel(currentUser.name, req.body.title, req.body.post)
+        let tags = [req.body.tag1, req.body.tag2, req.body.tag3]
+        let post = new PostModel(currentUser.name, req.body.title, tags, req.body.post)
         post.save()
         req.flash('success', "发布成功")
         res.redirect('/')
@@ -148,6 +149,40 @@ router.get('/archive', async (req, res) => {
 
         res.render('archive', {
             title: '存档',
+            posts: posts,
+            user: req.session.user,
+            success: req.flash('success').toString(),
+            error: req.flash('error').toString()
+        })
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect('/')
+    }
+})
+
+router.get('/tags', async (req, res) => {
+    try {
+        let posts = await PostModel.getTags()
+
+        res.render('tags', {
+            title: '标签',
+            posts: posts,
+            user: req.session.user,
+            success: req.flash('success').toString(),
+            error: req.flash('error').toString()
+        })
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect('/')
+    }
+})
+
+router.get('/tags/:tag', async (req, res) => {
+    try {
+        let posts = await PostModel.getTag(req.params.tag)
+
+        res.render('tag', {
+            title: 'TAG:' + req.params.tag,
             posts: posts,
             user: req.session.user,
             success: req.flash('success').toString(),

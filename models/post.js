@@ -3,9 +3,10 @@ import {markdown} from "markdown"
 
 let collectionName = "posts"
 
-function Post(name, title, post) {
+function Post(name, title, tags, post) {
     this.name = name
     this.title = title
+    this.tags = tags
     this.post = post
 }
 
@@ -31,6 +32,7 @@ Post.prototype.save = function () {
             name: this.name,
             time: time,
             title: this.title,
+            tags: this.tags,
             post: this.post,
             comments: []
         }
@@ -119,12 +121,9 @@ Post.getTen = (name, page) => {
                 query.name = name
             }
 
-            client.db().collection(collectionName).find(query, {
-                skip: (page - 1) * 10,
-                limit: 10
-            }).sort({
+            client.db().collection(collectionName).find(query).sort({
                 time: -1
-            }).toArray().then((docs) => {
+            }).limit(10).skip((page - 1) * 10).toArray().then((docs) => {
                 docs.forEach(doc => {
                     doc.post = markdown.toHTML(doc.post)
                     if (doc.comments) {
@@ -170,6 +169,47 @@ Post.getArchive = () => {
     return new Promise((resolve, reject) => {
         mongodb.then(client => {
             client.db().collection(collectionName).find({}, {
+                "name": 1,
+                "time": 1,
+                "title": 1
+            }).sort({
+                time: -1
+            }).toArray().then(docs => {
+                resolve(docs)
+            }).catch(e => {
+                reject(e)
+            })
+        })
+    })
+}
+
+/**
+ * 返回所有标签
+ * @returns {Promise<any>}
+ */
+Post.getTags = () => {
+    return new Promise((resolve, reject) => {
+        mongodb.then(client => {
+            client.db().collection(collectionName).distinct("tags").then(docs => {
+                resolve(docs)
+            }).catch(e => {
+                reject(e)
+            })
+        })
+    })
+}
+
+/**
+ * 返回含有特定标签的所有文章
+ * @param tag
+ * @returns {Promise<any>}
+ */
+Post.getTag = (tag) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then(client => {
+            client.db().collection(collectionName).find({
+                "tags": tag
+            }, {
                 "name": 1,
                 "time": 1,
                 "title": 1
