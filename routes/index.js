@@ -142,6 +142,23 @@ router.post('/post', async (req, res) => {
     }
 })
 
+router.get('/archive', async (req, res) => {
+    try {
+        let posts = await PostModel.getArchive()
+
+        res.render('archive', {
+            title: '存档',
+            posts: posts,
+            user: req.session.user,
+            success: req.flash('success').toString(),
+            error: req.flash('error').toString()
+        })
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect('/')
+    }
+})
+
 router.get("/u/:name", async (req, res) => {
     let user = await UserModel.get(req.params.name)
     if (!user) {

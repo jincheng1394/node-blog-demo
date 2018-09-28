@@ -162,6 +162,28 @@ Post.getCount = (name) => {
         })
     })
 }
+
+/**
+ * 返回所有文章存档信息
+ */
+Post.getArchive = () => {
+    return new Promise((resolve, reject) => {
+        mongodb.then(client => {
+            client.db().collection(collectionName).find({}, {
+                "name": 1,
+                "time": 1,
+                "title": 1
+            }).sort({
+                time: -1
+            }).toArray().then(docs => {
+                resolve(docs)
+            }).catch(e => {
+                reject(e)
+            })
+        })
+    })
+}
+
 /**
  * 读取文章信息
  * @param name
