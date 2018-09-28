@@ -5,6 +5,7 @@ import CommentModel from "../models/Comment"
 import util from "util"
 import crypto from "crypto"
 import fs from 'fs'
+import passport from 'passport'
 
 let router = express.Router()
 
@@ -118,8 +119,30 @@ router.post('/login', async (req, res, next) => {
     return res.redirect('/')
 })
 
+router.get("/login/github", passport.authenticate("github", {session: false}))
+router.get("/login/github/callback", passport.authenticate("github", {
+    session: false,
+    failureRedirect: '/login',
+    successFlash: '登陆成功！'
+}), async (req, res) => {
+    let user = await UserModel.getOpenId(req.user.id)
+    if (!user) {
+        let newUser = new UserModel({
+            name: req.user.username,
+            password: "123456",
+            email: req.user.emails[0].value,
+            head: req.user.photos[0].value,
+            openId: req.user.id
+        })
+        user = await newUser.save()
+        console.log("bind")
+    }
+    req.session.user = user
+    res.redirect('/')
+})
+
 router.get('/post', checkLogin)
-router.get('/post', async (req, res, next) => {
+router.get('/post', async (req, res) => {
     res.render('post', {
         title: '发表',
         user: req.session.user,
