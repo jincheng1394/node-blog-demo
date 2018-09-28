@@ -31,7 +31,8 @@ Post.prototype.save = function () {
             name: this.name,
             time: time,
             title: this.title,
-            post: this.post
+            post: this.post,
+            comments: []
         }
 
         mongodb.then((client) => {
@@ -91,6 +92,11 @@ Post.getAll = (name) => {
             }).toArray().then((res) => {
                 res.forEach(doc => {
                     doc.post = markdown.toHTML(doc.post)
+                    if (doc.comments) {
+                        doc.comments.forEach(comment => {
+                            comment.content = markdown.toHTML(comment.content)
+                        })
+                    }
                 })
                 resolve(res)
             }).catch((err) => {

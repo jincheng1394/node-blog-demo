@@ -1,6 +1,7 @@
 import express from "express"
 import UserModel from "../models/user"
 import PostModel from "../models/post"
+import CommentModel from "../models/Comment"
 import util from "util"
 import crypto from "crypto"
 import fs from 'fs'
@@ -168,6 +169,28 @@ router.get("/u/:name/:day/:title", async (req, res) => {
         error: req.flash('error').toString()
     })
 
+})
+
+router.post('/u/:name/:day/:title', async (req, res) => {
+    let date = new Date()
+    let time = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes())
+    let comment = {
+        name: req.body.name,
+        email: req.body.email,
+        website: req.body.website,
+        time: time,
+        content: req.body.content
+    }
+    try {
+        let newComment = new CommentModel(req.params.name, req.params.day, req.params.title, comment)
+        await newComment.save()
+        req.flash('success', '留言成功!')
+    } catch (e) {
+        req.flash('error', e)
+
+    }
+
+    return res.redirect('back')
 })
 
 router.get('/edit/:name/:day/:title', checkLogin)
