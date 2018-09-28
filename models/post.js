@@ -46,11 +46,37 @@ Post.prototype.save = function () {
 }
 
 /**
- * 读取文章信息
+ * 更新一篇文章及其相关信息
  * @param name
- * @param callback
+ * @param day
+ * @param title
  */
-Post.get = (name) => {
+Post.update = (name, day, title, post) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then((client) => {
+            // 更新文章内容
+            const collection = client.db().collection(collectionName)
+            collection.updateOne({
+                "name": name,
+                "time.day": day,
+                "title": title
+            }, {
+                $set: {post: post}
+            }).then((res) => {
+                resolve(null)
+            }).catch((err) => {
+                reject(err)
+            })
+        })
+    })
+}
+
+/**
+ * 文章列表
+ * @param name
+ * @returns {Promise<any>}
+ */
+Post.getAll = (name) => {
     return new Promise((resolve, reject) => {
         mongodb.then((client) => {
             const collection = client.db().collection(collectionName)
@@ -67,6 +93,80 @@ Post.get = (name) => {
                     doc.post = markdown.toHTML(doc.post)
                 })
                 resolve(res)
+            }).catch((err) => {
+                reject(err)
+            })
+        })
+    })
+}
+
+/**
+ * 读取文章信息
+ * @param name
+ * @param callback
+ */
+Post.getOne = (name, day, title) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then((client) => {
+            const collection = client.db().collection(collectionName)
+
+            let query = {
+                "name": name,
+                "time.day": day,
+                "title": title
+            }
+            collection.findOne(query).then((res) => {
+                // 解析 markdown 为 html
+                res.post = markdown.toHTML(res.post)
+                resolve(res)
+            }).catch((err) => {
+                reject(err)
+            })
+        })
+    })
+}
+
+Post.edit = (name, day, title) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then((client) => {
+            const collection = client.db().collection(collectionName)
+
+            let query = {
+                "name": name,
+                "time.day": day,
+                "title": title
+            }
+
+            collection.findOne(query).then((res) => {
+                resolve(res)
+            }).catch((err) => {
+                reject(err)
+            })
+        })
+    })
+}
+
+/**
+ * 删除一篇文章
+ * @param name
+ * @param day
+ * @param title
+ * @returns {Promise<any>}
+ */
+Post.remove = (name, day, title) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then((client) => {
+            const collection = client.db().collection(collectionName)
+
+            // 根据用户名、日期和标题查找并删除一篇文章
+            collection.remove({
+                "name": name,
+                "time.day": day,
+                "title": title
+            }, {
+                w: 1
+            }).then(() => {
+                resolve(null)
             }).catch((err) => {
                 reject(err)
             })

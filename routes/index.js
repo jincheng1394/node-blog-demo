@@ -9,7 +9,7 @@ let router = express.Router()
 
 /* GET home page. */
 router.get('/', async (req, res, next) => {
-    let posts = await PostModel.get(null)
+    let posts = await PostModel.getAll(null)
     if (!posts) {
         posts = []
     }
@@ -98,7 +98,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     // 检查密码是否一致
-    if (user.password != password) {
+    if (user.password !== password) {
         req.flash('error', "密码错误")
         return res.redirect('/login')
     }
@@ -130,6 +130,91 @@ router.post('/post', async (req, res) => {
     } catch (e) {
         req.flash('error', e)
         res.redirect('/post')
+    }
+})
+
+router.get("/u/:name", async (req, res) => {
+    let user = await UserModel.get(req.params.name)
+    if (!user) {
+        req.flash('error', '用户不存在！')
+        return res.redirect('/') // 用户不存在则跳转到主页
+    }
+
+    // 查询并返回该用户的所有文章
+    let posts = await PostModel.getAll(user.name)
+    res.render('user', {
+        title: user.name,
+        user: req.session.user,
+        posts: posts,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
+
+})
+
+router.get("/u/:name/:day/:title", async (req, res) => {
+    // 查询并返回该用户的所有文章
+    let post = await PostModel.getOne(req.params.name, req.params.day, req.params.title)
+    if (!post) {
+        req.flash('error', '文章不存在！')
+        return res.redirect('/') // 用户不存在则跳转到主页
+    }
+
+    res.render('article', {
+        title: post.title,
+        user: req.session.user,
+        post: post,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
+
+})
+
+router.get('/edit/:name/:day/:title', checkLogin)
+router.get('/edit/:name/:day/:title', async (req, res) => {
+    let currentUser = req.session.user
+
+    let post = await PostModel.edit(currentUser.name, req.params.day, req.params.title)
+    if (!post) {
+        req.flash('error', "文章不存在")
+        return res.redirect('back')
+    }
+
+    res.render('edit', {
+        title: '编辑',
+        post: post,
+        user: currentUser,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
+
+})
+
+router.post('/edit/:name/:day/:title', checkLogin)
+router.post('/edit/:name/:day/:title', async (req, res) => {
+    let currentUser = req.session.user
+    let url = encodeURI('/u/' + req.params.name + '/' + req.params.day + '/' + req.params.title)
+
+    try {
+        await PostModel.update(currentUser.name, req.params.day, req.params.title, req.body.post)
+        req.flash('success', '修改成功!')
+        res.redirect(url) //成功！返回文章页
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect(url) //出错！返回文章页
+    }
+})
+
+router.get('/remove/:name/:day/:title', checkLogin)
+router.get('/remove/:name/:day/:title', async (req, res) => {
+    let currentUser = req.session.user
+    try {
+        await PostModel.remove(currentUser.name, req.params.day, req.params.title)
+        req.flash('success', '删除成功!')
+        return res.redirect('/')
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect('back')
     }
 })
 
