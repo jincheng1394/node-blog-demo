@@ -224,7 +224,7 @@ Post.getCount = (name) => {
                 query.name = name
             }
 
-            client.db().collection(collectionName).count(query).then(res => {
+            client.db().collection(collectionName).countDocuments(query).then(res => {
                 resolve(res)
             }).catch(e => {
                 reject(0)
