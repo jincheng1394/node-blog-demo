@@ -3,20 +3,21 @@ import UserModel from "../models/user"
 import PostModel from "../models/post"
 import util from "util"
 import crypto from "crypto"
+import fs from 'fs'
 
 let router = express.Router()
 
 /* GET home page. */
 router.get('/', async (req, res, next) => {
     let posts = await PostModel.get(null)
-    if (!posts){
+    if (!posts) {
         posts = []
     }
 
     res.render('index', {
         title: '主页',
         user: req.session.user,
-        posts:posts,
+        posts: posts,
         success: req.flash('success').toString(),
         error: req.flash('error').toString()
     })
@@ -119,7 +120,7 @@ router.get('/post', async (req, res, next) => {
 })
 
 router.post('/post', checkLogin)
-router.post('/post', async (req, res, next) => {
+router.post('/post', async (req, res) => {
     try {
         let currentUser = req.session.user
         let post = new PostModel(currentUser.name, req.body.title, req.body.post)
@@ -130,6 +131,37 @@ router.post('/post', async (req, res, next) => {
         req.flash('error', e)
         res.redirect('/post')
     }
+})
+
+router.get('/upload', checkLogin)
+router.get('/upload', async (req, res) => {
+    res.render('upload', {
+        title: '文件上传',
+        user: req.session.user,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
+})
+
+router.post('/upload', checkLogin)
+router.post('/upload', async (req, res) => {
+    req.files.forEach(file => {
+        console.log(file)
+        if (file.size === 0) {
+            // 使用同步方式删除一个文件
+            fs.unlinkSync(file.path)
+            console.log('Successfully removed an empty file!')
+        } else {
+            let date = new Date()
+            // let target_path = `./public/upload/${date.getFullYear()}/${date.getMonth()}/${date.getDay()}/${file.name}`
+            let target_path = `./public/upload/${file.filename}`
+            // 使用同步方式重命名一个文件
+            fs.renameSync(file.path, target_path)
+            console.log('Successfully renamed a file!')
+        }
+    })
+    req.flash('success', '文件上传成功!')
+    res.redirect('/upload')
 })
 
 router.get('/logout', checkLogin)
