@@ -133,7 +133,7 @@ router.post('/post', async (req, res) => {
     try {
         let currentUser = req.session.user
         let tags = [req.body.tag1, req.body.tag2, req.body.tag3]
-        let post = new PostModel(currentUser.name, req.body.title, tags, req.body.post)
+        let post = new PostModel(currentUser.name, currentUser.head, req.body.title, tags, req.body.post)
         post.save()
         req.flash('success', "发布成功")
         res.redirect('/')
@@ -194,6 +194,22 @@ router.get('/tags/:tag', async (req, res) => {
     }
 })
 
+router.get('/search', async (req, res) => {
+    try {
+        let posts = await PostModel.search(req.query.keyword)
+        res.render('search', {
+            title: "SEARCH:" + req.query.keyword,
+            posts: posts,
+            user: req.session.user,
+            success: req.flash('success').toString(),
+            error: req.flash('error').toString()
+        })
+    } catch (e) {
+        req.flash('error', e)
+        return res.redirect('/')
+    }
+})
+
 router.get("/u/:name", async (req, res) => {
     let user = await UserModel.get(req.params.name)
     if (!user) {
@@ -207,11 +223,11 @@ router.get("/u/:name", async (req, res) => {
     // 查询并返回第page页的10篇文章
     let total = await PostModel.getCount(user.name)
     let posts = await PostModel.getTen(user.name, page)
-
     res.render('user', {
         title: user.name,
         user: req.session.user,
         posts: posts,
+        page: page,
         isFirstPage: (page - 1) == 0,
         isLastPage: ((page - 1) * 10 + posts.length) == total,
         success: req.flash('success').toString(),
@@ -241,8 +257,11 @@ router.get("/u/:name/:day/:title", async (req, res) => {
 router.post('/u/:name/:day/:title', async (req, res) => {
     let date = new Date()
     let time = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes())
+    let email_MD5 = crypto.createHash('md5').update(req.body.email.toLowerCase()).digest('hex')
+    let head = "http://www.gravatar.com/avatar/" + email_MD5 + "?s=48"
     let comment = {
         name: req.body.name,
+        head: head,
         email: req.body.email,
         website: req.body.website,
         time: time,
@@ -308,6 +327,26 @@ router.get('/remove/:name/:day/:title', async (req, res) => {
     }
 })
 
+router.get('/reprint/:name/:day/:title', checkLogin)
+router.get('/reprint/:name/:day/:title', async (req, res) => {
+    try {
+        let currentUser = req.session.user
+        let post = await PostModel.edit(req.params.name, req.params.day, req.params.title)
+
+        let reprint_from = {name: post.name, day: post.time.day, title: post.title}
+        let reprint_to = {name: currentUser.name, head: currentUser.head}
+        let reprint = await PostModel.reprint(reprint_from, reprint_to)
+
+        let url = encodeURI('/u/' + reprint.name + '/' + reprint.time.day + '/' + reprint.title)
+        //跳转到转载后的文章页面
+        req.flash('success', '转载成功!')
+        res.redirect(url)
+    } catch (e) {
+        req.flash('error', e)
+        res.redirect("back")
+    }
+})
+
 router.get('/upload', checkLogin)
 router.get('/upload', async (req, res) => {
     res.render('upload', {
@@ -339,6 +378,14 @@ router.post('/upload', async (req, res) => {
     res.redirect('/upload')
 })
 
+router.get('/links', (req, res) => {
+    res.render('links', {
+        title: '友情链接',
+        user: req.session.user,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+    })
+})
 router.get('/logout', checkLogin)
 router.get('/logout', async (req, res, next) => {
     delete req.session.user
