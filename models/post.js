@@ -107,6 +107,62 @@ Post.getAll = (name) => {
 }
 
 /**
+ * 一次获取十篇文章
+ * @param name
+ * @returns {Promise<any>}
+ */
+Post.getTen = (name, page) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then((client) => {
+            let query = {}
+            if (name) {
+                query.name = name
+            }
+
+            client.db().collection(collectionName).find(query, {
+                skip: (page - 1) * 10,
+                limit: 10
+            }).sort({
+                time: -1
+            }).toArray().then((docs) => {
+                docs.forEach(doc => {
+                    doc.post = markdown.toHTML(doc.post)
+                    if (doc.comments) {
+                        doc.comments.forEach(comment => {
+                            comment.content = markdown.toHTML(comment.content)
+                        })
+                    }
+                })
+                resolve(docs)
+            }).catch((err) => {
+                reject(err)
+            })
+        })
+    })
+}
+
+/**
+ * 获取文章总数
+ * @param name
+ * @returns {Promise<any>}
+ */
+Post.getCount = (name) => {
+    return new Promise((resolve, reject) => {
+        mongodb.then(client => {
+            let query = {}
+            if (name) {
+                query.name = name
+            }
+
+            client.db().collection(collectionName).count(query).then(res => {
+                resolve(res)
+            }).catch(e => {
+                reject(0)
+            })
+        })
+    })
+}
+/**
  * 读取文章信息
  * @param name
  * @param callback

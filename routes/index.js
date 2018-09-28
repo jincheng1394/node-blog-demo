@@ -10,7 +10,12 @@ let router = express.Router()
 
 /* GET home page. */
 router.get('/', async (req, res, next) => {
-    let posts = await PostModel.getAll(null)
+    // 判断是否是第一页，并把请求的页数转换成number类型
+    let page = req.query.p ? parseInt(req.query.p) : 1
+
+    // 查询并返回第page页的10篇文章
+    let total = await PostModel.getCount(null)
+    let posts = await PostModel.getTen(null, page)
     if (!posts) {
         posts = []
     }
@@ -19,6 +24,9 @@ router.get('/', async (req, res, next) => {
         title: '主页',
         user: req.session.user,
         posts: posts,
+        page: page,
+        isFirstPage: (page - 1) == 0,
+        isLastPage: ((page - 1) * 10 + posts.length) == total,
         success: req.flash('success').toString(),
         error: req.flash('error').toString()
     })
@@ -141,12 +149,19 @@ router.get("/u/:name", async (req, res) => {
         return res.redirect('/') // 用户不存在则跳转到主页
     }
 
-    // 查询并返回该用户的所有文章
-    let posts = await PostModel.getAll(user.name)
+    // 判断是否是第一页，并把请求的页数转换成number类型
+    let page = req.query.p ? parseInt(req.query.p) : 1
+
+    // 查询并返回第page页的10篇文章
+    let total = await PostModel.getCount(user.name)
+    let posts = await PostModel.getTen(user.name, page)
+
     res.render('user', {
         title: user.name,
         user: req.session.user,
         posts: posts,
+        isFirstPage: (page - 1) == 0,
+        isLastPage: ((page - 1) * 10 + posts.length) == total,
         success: req.flash('success').toString(),
         error: req.flash('error').toString()
     })
