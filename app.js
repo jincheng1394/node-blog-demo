@@ -10,6 +10,7 @@ let logger = require('morgan')
 let MongoStore = require('connect-mongo')(session)
 let flash = require('connect-flash')
 let multer = require('multer')
+let fs = require('fs')
 
 let indexRouter = require('./routes/index')
 let usersRouter = require('./routes/users')
@@ -19,10 +20,19 @@ let app = express()
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'ejs')
 
-app.use(logger('dev'))
+// app.use(logger('dev'))
+let accessLog = fs.createWriteStream('access.log', {flags: 'a'})
+let errorLog = fs.createWriteStream('error.log', {flags: 'a'})
+app.use(logger({stream: accessLog}))
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(express.static(path.join(__dirname, 'public')))
+
+app.use((err, req, res, next) => {
+    let meta = '[' + new Date() + '] ' + req.url + '\n'
+    errorLog.write(meta + err.stack + '\n')
+    next()
+})
 
 app.use(cookieParser(settings.cookieSecret))
 

@@ -15,3 +15,5 @@ yarn.lock
 === other ===
 config/*_test.*
 public/upload/*
+access.log
+error.log
