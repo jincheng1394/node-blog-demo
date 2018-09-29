@@ -13,6 +13,8 @@ let multer = require('multer')
 let fs = require('fs')
 let passport = require('passport')
 let GithubStrategy = require('passport-github').Strategy
+let mongoose = require('mongoose')
+
 let indexRouter = require('./routes/index')
 let usersRouter = require('./routes/users')
 
@@ -35,6 +37,8 @@ app.use((err, req, res, next) => {
     next()
 })
 
+// mongodb 配置
+mongoose.connect(settings.url, {useNewUrlParser: true})
 
 app.use(cookieParser(settings.cookieSecret))
 
@@ -55,13 +59,13 @@ app.use(session({
 // passport配置
 app.use(passport.initialize()) //初始化 Passport
 app.use(passport.session())
-if ('development' == app.get('env')){
+if ('development' === app.get('env')) {
     passport.use(new GithubStrategy({
         clientID: "14ace71283bfba80c21c",
         clientSecret: "18b7bcfa4ef86c15d1e60c3de1524b579db930c3",
         callbackURL: "/login/github/callback"
-    }, (accessToken, refreshToken, profile, cb) =>{
-        cb(null, profile);
+    }, (accessToken, refreshToken, profile, cb) => {
+        cb(null, profile)
     }))
 }
 
